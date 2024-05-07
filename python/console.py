@@ -1,5 +1,6 @@
 _CONSOLE_COLOR = {
     'blue': '\033[94m',
+    'gray': '\033[90m',
     'grey': '\033[90m',
     'yellow': '\033[93m',
     'orange': '\033[93m',  # yellow and orange are actually the same
