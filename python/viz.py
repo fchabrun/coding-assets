@@ -10,7 +10,9 @@ from sklearn import metrics
 from scipy.stats import ttest_ind
 from matplotlib import pyplot as plt
 
-def plotROC(y, y_, thresholds = [dict(value=.5, name="default"),dict(value="youden", name="Youden")], new_figure=True, show=True, invert_if_auc_below_50=False, **kwargs):
+def plotROC(y, y_, thresholds = [dict(value=.5, name="default"),dict(value="youden", name="Youden")], new_figure=True, show=True, invert_if_auc_below_50=False,
+            auto_va_alignment=False,
+            **kwargs):
     """
     
     Plots the ROC curve with the AUC-ROC
@@ -81,9 +83,30 @@ def plotROC(y, y_, thresholds = [dict(value=.5, name="default"),dict(value="youd
     plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
     
     bbox_props = dict(fc="white")
-    
+
+    t_i_lower, t_i_higher = -1, -1
+    ll_thresh, hh_thresh = np.Inf, -np.Inf
+    if auto_va_alignment:  # compute position
+        for t_i, threshold in enumerate(thresholds):
+            # select indice among possible thresholds
+            if threshold["value"] == "youden":
+                youden = (1-fpr)+tpr-1
+                where=np.where(youden == np.max(youden))[0][0]
+            else:
+                where=np.argmin(np.abs(t-threshold["value"]))
+            y_height_here = tpr[where]
+            if y_height_here < ll_thresh:
+                t_i_lower = t_i
+                ll_thresh = y_height_here
+            if y_height_here > hh_thresh:
+                t_i_higher = t_i
+                hh_thresh = y_height_here
+        if (t_i_lower == t_i_higher) and (len(thresholds) > 1):
+            t_i_lower = 0
+            t_i_higher = 1
+
     # Display thresholds
-    for threshold in thresholds:
+    for t_i, threshold in enumerate(thresholds):
         # select indice among possible thresholds
         if threshold["value"] == "youden":
             youden = (1-fpr)+tpr-1
@@ -93,19 +116,25 @@ def plotROC(y, y_, thresholds = [dict(value=.5, name="default"),dict(value="youd
         # plot a point on the curve
         plt.plot(fpr[where], tpr[where], 'o', color = 'orange')
         # display text
+        if t_i == t_i_lower:
+            va = "top"
+        elif  t_i == t_i_higher:
+            va = "bottom"
+        else:
+            va = "center"
         if "name" in threshold.keys() and threshold["name"] is not None and len(threshold["name"])>0:
             plt.text(fpr[where]+.02,
                      tpr[where],
                      'Threshold={:.2E} ({}): Se={:.1f}%, Sp={:.1f}%'.format(t[where], threshold["name"], 100*tpr[where], 100*(1-fpr[where])),
                      bbox = bbox_props,
-                     verticalalignment="center",
+                     verticalalignment=va,
                      wrap = True)
         else:
             plt.text(fpr[where]+.02,
                      tpr[where],
                      'Threshold={:.2E}: Se={:.1f}%, Sp={:.1f}%'.format(t[where], 100*tpr[where], 100*(1-fpr[where])),
                      bbox = bbox_props,
-                     verticalalignment="center",
+                     verticalalignment=va,
                      wrap = True)
 
     # Set boundaries, labels, titles...
