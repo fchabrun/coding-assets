@@ -3,7 +3,13 @@ import os
 import json
 
 
-def load_config_from_json(wdir) -> argparse.Namespace:
+def load_config_from_json_at_realpath(jsonpath: str) -> argparse.Namespace:
+    with open(jsonpath, "r") as jsf:
+        jsdata = json.load(jsf)
+    return argparse.Namespace(**jsdata)
+
+
+def load_config_from_json(wdir: str) -> argparse.Namespace:
     with open(os.path.join(wdir, "args_dict.json"), "r") as jsf:
         jsdata = json.load(jsf)
     return argparse.Namespace(**jsdata)
