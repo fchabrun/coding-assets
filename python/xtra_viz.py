@@ -3,7 +3,6 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.pyplot import *
 import matplotlib.font_manager as font_manager
-import seaborn as sns
 
 # graphical parameters, for article figures:
 pp_size = 6
@@ -49,6 +48,7 @@ def plot_lm(x, y, group_name, xlabel, ylabel, xticks=None, yticks=None, show_gri
             confidence_level: float = None):
     from scipy import stats
     from sklearn.linear_model import LinearRegression
+    import seaborn as sns
 
     x = x.to_numpy() if type(x) is pd.Series else x
     x = np.array(x) if type(x) in (list, tuple) else x
@@ -189,6 +189,7 @@ def plot_box(x, y, hue, xlabel, ylabel, yticks=None, n_yticks: int = 5, showmean
              data=None, palette=None,
              show_grid: bool = True,
              subtype="boxplot"):
+    import seaborn as sns
     # the actual box plot
     ax = None
     if subtype == "boxplot":
@@ -287,7 +288,13 @@ def plot_roc(y, y_, suptitle: str = None, display_n: bool = False, show_at_best_
 
         assert (confidence_level > 0) and (confidence_level < 1), f"Unexpected {confidence_level=}"
 
-        t = np.concatenate([[np.Inf, ], np.sort(np.unique(y_))[::-1]])
+        _inf = None
+        try:
+            _inf = np.Inf
+        except:
+            _inf = np.inf
+
+        t = np.concatenate([[_inf, ], np.sort(np.unique(y_))[::-1]])
         tpr, tpr_lo, tpr_hi, fpr, fpr_lo, fpr_hi = [], [], [], [], [], []
         for thresh in t:
             thresh_tpr, (thresh_tpr_lo, thresh_tpr_hi) = confidenceinterval.tpr_score(y, (y_ >= thresh) * 1, confidence_level=confidence_level)
@@ -364,6 +371,7 @@ def plot_roc(y, y_, suptitle: str = None, display_n: bool = False, show_at_best_
 # quick function to do regression
 def plot_paired_box(data, x, y, xlabel, ylabel, yticks=None, n_yticks: int = 7, showmeans: bool = False, suptitle: str = None,
                     legend_loc: str = None, legend_off: bool = False, palette=None, points_palette=None):
+    import seaborn as sns
     # the actual box plot
     ax = sns.boxplot(data=data, x=x, y=y,
                      palette=palette,
