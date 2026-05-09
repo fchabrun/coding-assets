@@ -188,6 +188,7 @@ def plot_box(x, y, hue, xlabel, ylabel, yticks=None, n_yticks: int = 5, showmean
              legend_loc: str = None, legend_off: bool = False,
              data=None, palette=None,
              show_grid: bool = True,
+             display_n_obs = True,
              subtype="boxplot"):
     import seaborn as sns
     # the actual box plot
@@ -272,6 +273,56 @@ def plot_box(x, y, hue, xlabel, ylabel, yticks=None, n_yticks: int = 5, showmean
         ax.set_axisbelow(True)
         ax.yaxis.grid(color='#aaaaaa', linewidth=0.5)
         # plt.grid(axis="y", color='#aaaaaa', linewidth=0.5)
+    if display_n_obs:
+        # assert hue is None, "Cannot compute text for n_obs if hue is not None!"
+        assert data is not None, "Cannot compute text for n_obs if data is None!"
+        # medians = data.groupby([x])[y].median().values
+        ylo, yhi = ax.get_ylim()
+        y0pos = ylo + (yhi - ylo) * .01
+        if hue is None:
+            # nobs = boxplot_kwargs["data"][boxplot_kwargs["x"]].value_counts().values
+            nobs = data[x].value_counts().values
+            nobs = [str(x) for x in nobs.tolist()]
+            nobs = ["n=" + i for i in nobs]
+        else:
+            nobs = []
+            # for x_possible_value in list(boxplot_kwargs["data"][boxplot_kwargs["x"]].cat.categories):
+            #     n_by_hue = []
+            #     for hue_possible_value in list(boxplot_kwargs["data"][boxplot_kwargs["hue"]].cat.categories):
+            #         n_here = ((boxplot_kwargs["data"][boxplot_kwargs["x"]] == x_possible_value) & (boxplot_kwargs["data"][boxplot_kwargs["hue"]] == hue_possible_value)).sum()
+            #         n_by_hue.append(n_here)
+            #     nobs.append(n_by_hue)
+            for x_possible_value in list(data[x].cat.categories):
+                n_by_hue = []
+                for hue_possible_value in list(data[hue].cat.categories):
+                    n_here = ((data[x] == x_possible_value) & (data[hue] == hue_possible_value)).sum()
+                    n_by_hue.append(n_here)
+                nobs.append(n_by_hue)
+            nobs = [["n=" + str(x) for x in xlist] for xlist in nobs]
+
+        pos = range(len(nobs))
+        for tick, label in zip(pos, ax.get_xticklabels()):
+            if type(nobs[tick]) is list:
+                hueobs = nobs[tick]
+                space_between_ticks = 1 / (len(hueobs) + 1)
+                ticks_range = (len(hueobs) - 1) * space_between_ticks
+                tick_start = 0 - (ticks_range / 2)
+                for ti, nobs_hue in enumerate(hueobs):
+                    ax.text(pos[tick] + tick_start + ti * space_between_ticks,
+                            # medians[tick] + 0.03,
+                            y0pos,
+                            nobs_hue,
+                            horizontalalignment='center',
+                            size='x-small',
+                            color='black', )
+            else:
+                ax.text(pos[tick],
+                        # medians[tick] + 0.03,
+                        y0pos,
+                        nobs[tick],
+                        horizontalalignment='center',
+                        size='x-small',
+                        color='black', )
     # legend
     if not legend_off:
         if legend_loc == "outside":
@@ -281,7 +332,8 @@ def plot_box(x, y, hue, xlabel, ylabel, yticks=None, n_yticks: int = 5, showmean
     return ax
 
 
-def plot_roc(y, y_, suptitle: str = None, display_n: bool = False, show_at_best_youden = False, text_bbox_alpha: float = .0, confidence_level: float = None):
+def plot_roc(y, y_, suptitle: str = None, display_n: bool = False, show_at_best_youden = False, text_bbox_alpha: float = .0, confidence_level: float = None,
+             suptitle_size: int = None):
     if confidence_level is not None:
         # using confidenceinterval
         import confidenceinterval
@@ -353,15 +405,26 @@ def plot_roc(y, y_, suptitle: str = None, display_n: bool = False, show_at_best_
     plt.ylim([0., 1.])
 
     ax = plt.gca()
-    xticks = np.round(100 * ax.get_xticks(), 0).astype(int)
-    yticks = np.round(100 * ax.get_yticks(), 0).astype(int)
+    xticks_raw = ax.get_xticks()
+    yticks_raw = ax.get_yticks()
+    xticks = np.round(100 * xticks_raw, 0).astype(int)
+    yticks = np.round(100 * yticks_raw, 0).astype(int)
+    ax.set_xticks(xticks_raw)
+    ax.set_yticks(yticks_raw)
     ax.set_xticklabels(xticks, fontdict=ticks_font_params)
     ax.set_yticklabels(yticks, fontdict=ticks_font_params)
 
     plt.xlabel('False Positive Rate', **labels_font_params)
     plt.ylabel('True Positive Rate', **labels_font_params)
     if suptitle is not None:
-        plt.title(suptitle, loc='left', font=paneltitle_font_params)
+        if suptitle_size is not None:
+            local_paneltitle_font_params = font_manager.FontProperties(family='Calibri',
+                                                                       weight='bold',
+                                                                       style='normal',
+                                                                       size=suptitle_size)
+        else:
+            local_paneltitle_font_params = paneltitle_font_params
+        plt.title(suptitle, loc='left', font=local_paneltitle_font_params)
         # plt.title(suptitle)
     plt.legend(loc="lower right")
     plt.tight_layout()
